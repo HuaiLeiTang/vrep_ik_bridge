@@ -1,0 +1,7 @@
+geometry_msgs/PoseStamped target
+geometry_msgs/PoseStamped viapoint
+bool use_viapoint
+sensor_msgs/JointState current_state
+---
+trajectory_msgs/JointTrajectory viapoint_trajectory
+trajectory_msgs/JointTrajectory trajectory_to_handover
