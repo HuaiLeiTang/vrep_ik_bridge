@@ -74,7 +74,7 @@ class VrepIKBridge:
             return pose_str
         # if no viapoint is given write a default
         if not use_viapoint:
-            string_poses = convert_to_string([-999, -999, -999], [-999, -999, -999, -999])
+            string_poses = convert_to_string([[-999, -999, -999], [-999, -999, -999, -999]])
         else:
             # create string for viapoint
             string_poses = convert_to_string(viaPointLocation)
@@ -94,7 +94,7 @@ class VrepIKBridge:
         # set the ros flag
         self.set_ros_flag()
 
-    def read_trajectory_files(self, current_state, use_viapoint=False):
+    def read_trajectory_files(self, use_viapoint=False):
         def save_trajectory(traj, i):
             save_file = os.path.join(self.save_folder, 'run' + str(self.run_number) + '_traj' + str(i) + '.json')
             # convert trajectory to json
@@ -103,14 +103,9 @@ class VrepIKBridge:
             with open(save_file, 'w') as outfile:
                 json.dump(dic, outfile, indent=True)
 
-        def read_one_file(filename, initial_state, delta_time=0):
+        def read_one_file(filename, delta_time=0):
             trajectory = JointTrajectory()
             trajectory.joint_names = self.robot_joint_names
-            # get initial state as first point
-            point = JointTrajectoryPoint()
-            point.time_from_start = rospy.Duration(0.1)
-            point.positions = initial_state
-            trajectory.points.append(point)
             # loop through the files for next points
             with open(filename) as f:
                 for line in f:
@@ -126,11 +121,11 @@ class VrepIKBridge:
         # wait for matlab flag
         self.wait_for_matlab_flag()
         if use_viapoint:
-            traj1 = read_one_file(self.traj1_file, current_state.position)
-            traj2 = read_one_file(self.traj2_file, traj1.points[-1].positions)
+            traj1 = read_one_file(self.traj1_file)
+            traj2 = read_one_file(self.traj2_file)
         else:
             traj1 = JointTrajectory()
-            traj2 = read_one_file(self.traj2_file, current_state.position)
+            traj2 = read_one_file(self.traj1_file)
         # save them
         save_trajectory(traj1, 1)
         save_trajectory(traj2, 2)
@@ -151,7 +146,7 @@ class VrepIKBridge:
         # query the bridge for the trajectory
         self.write_poses_in_file(handOverLocation, viaPointLocation, req.use_viapoint, side=side)
         # wait for the response
-        traj1, traj2 = self.read_trajectory_files(req.current_state, req.use_viapoint)
+        traj1, traj2 = self.read_trajectory_files(req.use_viapoint)
         # return the calculated trajectory
         rospy.loginfo('Sending trajectory.')
         return VrepIKResponse(viapoint_trajectory=traj1,
